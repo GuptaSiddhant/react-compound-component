@@ -1,16 +1,23 @@
 {
-  "name": "react-compounder",
-  "version": "0.0.1",
+  "name": "react-compound-components",
+  "version": "0.0.2",
   "description": "Create react compound components",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "files": [
+    "lib"
+  ],
   "scripts": {
     "prebuild": "yarn clear",
     "build": "tsc",
     "watch": "tsc --watch",
     "clear": "rm -rf ./lib"
   },
-  "keywords": [],
+  "keywords": [
+    "react",
+    "compound",
+    "component"
+  ],
   "author": "Siddhant Gupta",
   "license": "ISC",
   "devDependencies": {

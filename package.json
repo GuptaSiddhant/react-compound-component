@@ -1,6 +1,6 @@
 {
   "name": "react-compound-components",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Create react compound components",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

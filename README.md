@@ -1,10 +1,118 @@
 # React Compound Components
 
-> Compound components is a pattern where components are used together such that they share an implicit state that lets them communicate with each other in the background. A compound component is composed of a subset of child components that all work in tandem to produce some functionality. - [Alexi Taylor - dev.to](https://dev.to/alexi_be3/react-component-patterns-49ho)
-
 Create compound components with common managed state using React hooks.
 
-## Basic example
+> Compound components is a pattern where components are used together such that they share an implicit state that lets them communicate with each other in the background. A compound component is composed of a subset of child components that all work in tandem to produce some functionality. - [Alexi Taylor - dev.to](https://dev.to/alexi_be3/react-component-patterns-49ho)
+
+## Installation
+
+[![NPM](https://nodei.co/npm/react-compound-components.png?compact=true)](https://npmjs.org/package/react-compound-components)
+
+npm: `npm i react-compound-components`
+
+Yarn: `yarn add react-compound-components`
+
+## Usage
+
+Import the default exported function from library
+
+```tsx
+import createCompoundComponent from "react-compound-components";
+// OR (recommended)
+import ccc from "react-compound-components";
+```
+
+### `ccc`
+
+`ccc` function takes one react-hook function as parameter which is responsible for managing state of the compound component.
+It returns a tuple of 3 values:
+
+- Compound component,
+- hook-function to access state, and
+- a register function to register sub-components.
+
+```tsx
+// Naming could/should be changed to suit the case.
+const [Component, useCompoundState, register] = ccc(useManageStateHook);
+```
+
+#### `useManageStateHook`
+
+In above example, `useManageStateHook` is a simple react-hook which can take some props and return state value and modifiers as an object.
+
+```tsx
+const useManageStateHook = ({ initialValue }: { initialValue: number }) => {
+  const [value, setValue] = React.useState(initialValue);
+  const changeValue = (newValue: number) => setValue(value);
+  return { value, changeValue };
+};
+```
+
+In addition to returning state values and modifiers, an optional `Wrapper` component can be returned as well. As name suggests, this Wrapper component wraps around the Compound Component. The Wrapper component can only receive `children` as prop and should return it somehow.
+
+```tsx
+const useManageStateHook = ({ initialValue }: { initialValue: number }) => {
+  const [value, setValue] = React.useState(initialValue);
+  const changeValue = (newValue: number) => setValue(value);
+  const Wrapper: FC = ({ children }) => (
+    <div>
+      <h1>Compound component</h1>{" "}
+      <button onClick={() => changeValue(initialValue)}>Reset</button>
+      <hr />
+      {children}
+    </div>
+  );
+  return { Wrapper, value, changeValue };
+};
+```
+
+#### `Component`
+
+The first item in returned tuple is the actual Compound Component which is used to everywhere. This Component acts as a wrapper for all its sub-components. The sub-components can be accessed by using dot-notation of this Component. Eg.
+
+```tsx
+<Component>
+  <Component.SubComponent1 />
+  <Component.SubComponent2 />
+  <Component.SubComponent3 />
+</Component>
+```
+
+#### `useCompoundState`
+
+The resulting state can be accessed in any sub-component using the `useCompoundState` hook, which is returned in the tuple.
+
+```tsx
+const SubComponent = () => {
+  const { value } = useCompoundState();
+  return <pre>{JSON.stringify(value, null, 2)}</pre>;
+};
+```
+
+#### `register`
+
+A callback provided to simplify attaching Sub-components to parent/main component. It takes 2 parameters
+
+1. Functional component (mandatory, type: React.FC) - React functional component which return an Element. Use `useCompoundState` to access state properties. The component can take props as well.
+2. Name (optional, type: string) - In case the functional component is anonymous, the name string provided will be used as the dot-notation reference to the component.
+
+```tsx
+// 1. Register component with anonymous function and name as second parameter
+register(() => <div />, "SubComponent1");
+// 2. Register component as named component
+register(function SubComponent2() {
+  return <div />;
+});
+// 3. Register component with declared function
+const SubComponent3 = () => <div />;
+register(SubComponent3);
+```
+
+## Example
+
+Playground on [CodeSandBox](https://codesandbox.io/s/react-compound-component-vqfoq?file=/src/Tabs.tsx).
+
+### Basic example
 
 ```tsx
 import { useState, FC } from "react";
@@ -15,13 +123,6 @@ interface Props {
   initState?: number;
 }
 
-/** INIT
- * Create Compound component by providing a hook function to manage state.
- * This returns a tuple of
- * - Compound Component
- * - Hook to access state
- * - Registration callback to register sub-components
- */
 const [Counter, useCountState, register] = ccc((props: Props) => {
   const { initCount = 0 } = props;
   const [count, setCount] = useState(initCount);
@@ -30,27 +131,22 @@ const [Counter, useCountState, register] = ccc((props: Props) => {
   return { count, increment, decrement };
 });
 
-// 1. Register "Increase" component with
-// anonymous function and Component name as second parameter
 register(() => {
   const { increment } = useCountState();
   return <button onClick={increment}>Increase</button>;
 }, "Increase");
 
-// 2. Register "Decrease" component as named component
 register(function Decrease() {
   const { decrement } = useCountState();
   return <button onClick={decrement}>Decrease</button>;
 });
 
-// 3. Register "Count" component with declared function
 const Count: FC = () => {
   const { count } = useCountState();
   return <span>{count}</span>;
 };
 register(Count);
 
-// Use Compound Component elsewhere.
 const App = () => (
   <Counter initCount={10}>
     <Counter.Decrease />
@@ -62,7 +158,7 @@ const App = () => (
 render(<App />, document.getElementById("root"));
 ```
 
-## Advanced example
+### Advanced example
 
 Note: Not needed for JavaScript
 
@@ -87,7 +183,17 @@ const [Tabs, useTabs, register] = ccc((props: TabsProps) => {
     []
   );
   // Optional component to wrap Compound component
-  const Wrapper: FC = ({ children }) => <div className="tabs">{children}</div>;
+  const Wrapper: FC = ({ children }) => (
+    <div className="tabs">
+      <h1>
+        Tabs
+        <button onClick={() => changeActiveTabId(defaultActiveTabId)}>
+          Reset active tab
+        </button>
+      </h1>
+      {children}
+    </div>
+  );
   return { Wrapper, activeTabId, changeActiveTabId };
 });
 
@@ -137,8 +243,9 @@ and import the component for usage:
 
 ```tsx
 // index.tsx
-import Tabs from "./Tabs";
+import { FC } from "react";
 import { render } from "react-dom";
+import Tabs from "./Tabs";
 
 const App: FC = () => (
   <Tabs defaultActiveTabId="tab2">
@@ -156,3 +263,17 @@ const App: FC = () => (
 
 render(<App />, document.getElementById("root"));
 ```
+
+## Contributing
+
+If you find a bug, please [create an issue](https://github.com/GuptaSiddhant/react-compound-component/issues/new) providing instructions to reproduce it. It's always very appreciable if you find the time to fix it. In this case, please [submit a PR](https://github.com/GuptaSiddhant/react-compound-component/pulls).
+
+If you're a beginner, it'll be a pleasure to help you contribute. You can start by reading [the beginner's guide to contributing to a GitHub project](https://akrabat.com/the-beginners-guide-to-contributing-to-a-github-project/).
+
+### Know issues
+
+- When registering a sub-component, the TypeScript type of Sub-component isn't inferred automatically.
+
+## License
+
+MIT © Siddhant Gupta
